@@ -25,9 +25,9 @@ If two SMT's has different digests but differ in only one key, it means that has
 Proof:
 lets say merkle trees are M1 = MHT(xi...xj) M2 = MHT(xi'...xj)
 let's say merkle proof for xi and xi' = (h1,h2,..hj) where j is the depth of tree.
-let's say (p1,p2,...,pk) && (p1',p2',...,pk')are the hashes generated along the path where p = H(pi-1,hi) where i is the level in tree
+let's say (p1,p2,...,pj) && (p1',p2',...,pj') are the hashes generated along the path where p = H(pj-1,hj)
 
 extreme cases:
 case-1: H(H(xi'),p1') should have been equal to H(H(xi),p1), eventhough xi'!=xi which means there is a collision in H.
-case-2: H(pk',hj) should have been equal to H(pk,hj), eventhough pk'!=pk which means there is a collision in H.
+case-2: H(pj',hj) should have been equal to H(pj,hj), eventhough pk'!=pk which means there is a collision in H.
 Therfore collision would have happened at any level along the path by yielding same hash for two different inputs.
