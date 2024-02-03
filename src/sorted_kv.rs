@@ -109,7 +109,6 @@ impl AuthenticatedKV for SortedKV {
         self.commitment
     }
 
-
     /** Calculate the overall hash of an array by calculating its "Merkle
      *  mountain range". The exact details of how the calculation works
      *  aren't important to this problem, but the black-box behavior is.
@@ -150,7 +149,6 @@ impl AuthenticatedKV for SortedKV {
      *  ```
      */
     
-    // TODO is there any specific reason to check merkle proof of previous and next leaves
     fn check_proof(
         key: Self::K,
         res: Option<Self::V>,
@@ -680,19 +678,34 @@ mod tests {
      *  *******************************************
      */
     fn hash_sortedkv_insert_get(ops: Vec<InsertGetOp>) {
-        let _ = ops; // avoids an unused variable warning
-        todo!()
+        let mut hmap = HashMap::new();
+        let mut sorted_kv = SortedKV::new();
+
+        for op in ops {
+            match op {
+                InsertGetOp::Insert(k, v) => {
+                    hmap.insert(k.clone(), v.clone());
+                    sorted_kv = sorted_kv.insert(k, v);
+                }
+                InsertGetOp::Get(k) => {
+                    let (val,proof)= sorted_kv.get(k.clone());
+                    
+                    SortedKV::check_proof(k.clone(), val.clone(), &proof, &sorted_kv.commit()).unwrap();
+                    assert_eq!(hmap.get(&k), val.as_ref());
+                }
+            }
+        }
     }
 
     // TODO: remove this #[ignore]
-    #[ignore]
+ 
     #[quickcheck]
     fn hash_sortedkv_insert_get_quickcheck(ops: Vec<InsertGetOp>) {
         hash_sortedkv_insert_get(ops);
     }
 
     // TODO: remove this #[ignore]
-    #[ignore]
+
     #[test]
     fn hash_sortedkv_insert_get_test_cases() {
         use InsertGetOp::*;
@@ -705,6 +718,7 @@ mod tests {
             Get("2".to_string()),
             Get("0".to_string()),
             Get("0".to_string()),
+            Get("3".to_string()),
         ]);
 
         // quickcheck found a bug in an old implementation!
@@ -716,6 +730,8 @@ mod tests {
             Insert("80".to_string(), "\u{0}".to_string()),
             Insert("0".to_string(), "".to_string()),
             Get("80".to_string()),
+            Get("9".to_string()),
+            Get("0".to_string()),
         ]);
 
         hash_sortedkv_insert_get(vec![
@@ -724,6 +740,7 @@ mod tests {
             Insert("0".to_string(), "".to_string()),
             Insert("0".to_string(), "".to_string()),
             Get("0".to_string()),
+            Get("".to_string()),
         ]);
     }
 
