@@ -109,45 +109,6 @@ impl AuthenticatedKV for SortedKV {
         self.commitment
     }
 
-    /** Calculate the overall hash of an array by calculating its "Merkle
-     *  mountain range". The exact details of how the calculation works
-     *  aren't important to this problem, but the black-box behavior is.
-     *
-     *  As an example, given the array
-     *  [(0,10),(1,11),(2,12),(3,13),(4,14)], this calculates the overall
-     *  hash using the merkle tree:
-     *
-     *  ```text
-     *               f
-     *              /  \
-     *             /    \
-     *            /      \
-     *           /        \
-     *          /          \
-     *         /            \
-     *        d              e
-     *       / \            /
-     *      /   \          /
-     *     /     \        /
-     *    a       b       c
-     *   / \     / \     /
-     *  A   B   C   D   E
-     *
-     *  where:
-     *      A = H_leaf(0,10)
-     *      B = H_leaf(1,11)
-     *      C = H_leaf(2,12)
-     *      D = H_leaf(3,13)
-     *      E = H_leaf(4,14)
-     *
-     *      a = H_branch(A,B)
-     *      b = H_branch(C,D)
-     *      c = H_branch(E,EMPTY)
-     *      d = H_branch(a,b)
-     *      e = H_branch(c,EMPTY)
-     *      f = H_branch(d,e)
-     *  ```
-     */
 
     fn check_proof(
         key: Self::K,
@@ -505,6 +466,8 @@ mod sortedkv_util {
             peaks[i] = Some(running_hash);
         }
 
+        println!("{:?}",peaks);
+
         if peaks.len() > 1 && peaks.last() == Some(&None) {
             peaks.pop();
         }
@@ -775,7 +738,9 @@ mod tests {
      * In a hash map, when a duplicate key is inserted previous key will be overridden
      * but in case of sorted kv implementation it is inserted to the right of the list.
      * while removing as well, the rightmost duplicate key will be removed. So previous key still exists.
-     * In the following test duplicate key is inserted, removed and queried for it
+     * In the following test duplicate key is inserted, removed and queried for it.
+     * 
+     * To overcome this, we can replace the key if it exists already.
      */
     fn find_the_bug() {
         use InsertGetRemoveOp::*;
