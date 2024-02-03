@@ -148,7 +148,7 @@ impl AuthenticatedKV for SortedKV {
      *      f = H_branch(d,e)
      *  ```
      */
-    
+
     fn check_proof(
         key: Self::K,
         res: Option<Self::V>,
@@ -183,7 +183,7 @@ impl AuthenticatedKV for SortedKV {
                     (_, Some(prev_proof)) => {
                         if prev_proof.key > key {
                             return None;
-                        } 
+                        }
                         if prev_proof.root_from_path(ix - 1) != *comm {
                             return None;
                         }
@@ -276,7 +276,6 @@ impl AuthenticatedKV for SortedKV {
                                     }
                                 }
 
-                                
                                 if ix != 0 {
                                     return None;
                                 }
@@ -631,43 +630,55 @@ mod tests {
     use std::collections::{BTreeMap, HashMap};
 
     #[derive(Debug, Clone)]
-    enum InsertGetOp {
+    enum InsertGetRemoveOp {
         Insert(String, String),
         Get(String),
+        Remove(String),
     }
 
-    fn hash_btree_insert_get(ops: Vec<InsertGetOp>) {
+    fn hash_btree_insert_get_remove(ops: Vec<InsertGetRemoveOp>) {
         let mut hmap = HashMap::new();
         let mut bmap = BTreeMap::new();
 
         for op in ops {
             match op {
-                InsertGetOp::Insert(k, v) => {
+                InsertGetRemoveOp::Insert(k, v) => {
                     hmap.insert(k.clone(), v.clone());
                     bmap.insert(k, v);
                 }
-                InsertGetOp::Get(k) => {
+                InsertGetRemoveOp::Get(k) => {
                     assert_eq!(hmap.get(&k), bmap.get(&k));
+                }
+                InsertGetRemoveOp::Remove(k) => {
+                    hmap.remove(&k);
+                    bmap.remove(&k);
                 }
             }
         }
     }
 
     #[quickcheck]
-    fn hash_btree_insert_get_quickcheck(ops: Vec<InsertGetOp>) {
-        hash_btree_insert_get(ops);
+    fn hash_btree_insert_get_quickcheck(ops: Vec<InsertGetRemoveOp>) {
+        hash_btree_insert_get_remove(ops);
     }
 
     #[test]
     fn hash_btree_insert_get_test_cases() {
-        use InsertGetOp::*;
-        hash_btree_insert_get(vec![]);
-        hash_btree_insert_get(vec![
+        use InsertGetRemoveOp::*;
+        hash_btree_insert_get_remove(vec![]);
+        hash_btree_insert_get_remove(vec![
             Insert("0".to_string(), "a".to_string()),
             Insert("0".to_string(), "b".to_string()),
             Insert("1".to_string(), "c".to_string()),
             Get("2".to_string()),
             Get("0".to_string()),
+            Get("0".to_string()),
+        ]);
+
+        hash_btree_insert_get_remove(vec![
+            Insert("0".to_string(), "a".to_string()),
+            Insert("0".to_string(), "b".to_string()),
+            Remove("0".to_string()),
             Get("0".to_string()),
         ]);
     }
@@ -676,41 +687,52 @@ mod tests {
      *  *******************************************
      *                  TASK 2
      *  *******************************************
+     * In GET operation, we fetch the value from sorted kv and verify it with the check_proof associated method
+     * then we if it is equal to hashmap
      */
-    fn hash_sortedkv_insert_get(ops: Vec<InsertGetOp>) {
+    fn hash_sortedkv_insert_get_remove(ops: Vec<InsertGetRemoveOp>) {
         let mut hmap = HashMap::new();
         let mut sorted_kv = SortedKV::new();
 
         for op in ops {
             match op {
-                InsertGetOp::Insert(k, v) => {
+                InsertGetRemoveOp::Insert(k, v) => {
                     hmap.insert(k.clone(), v.clone());
                     sorted_kv = sorted_kv.insert(k, v);
                 }
-                InsertGetOp::Get(k) => {
-                    let (val,proof)= sorted_kv.get(k.clone());
-                    
-                    SortedKV::check_proof(k.clone(), val.clone(), &proof, &sorted_kv.commit()).unwrap();
+                InsertGetRemoveOp::Get(k) => {
+                    let (val, proof) = sorted_kv.get(k.clone());
+                    SortedKV::check_proof(
+                        k.clone(),
+                        val.clone(),
+                        &proof,
+                        &sorted_kv.commit(),
+                    )
+                    .unwrap();
                     assert_eq!(hmap.get(&k), val.as_ref());
+                }
+                InsertGetRemoveOp::Remove(k) => {
+                    hmap.remove(&k);
+                    sorted_kv = sorted_kv.remove(k.clone());
                 }
             }
         }
     }
 
     // TODO: remove this #[ignore]
- 
+
     #[quickcheck]
-    fn hash_sortedkv_insert_get_quickcheck(ops: Vec<InsertGetOp>) {
-        hash_sortedkv_insert_get(ops);
+    fn hash_sortedkv_insert_get_quickcheck(ops: Vec<InsertGetRemoveOp>) {
+        hash_sortedkv_insert_get_remove(ops);
     }
 
     // TODO: remove this #[ignore]
 
     #[test]
     fn hash_sortedkv_insert_get_test_cases() {
-        use InsertGetOp::*;
-        hash_sortedkv_insert_get(vec![]);
-        hash_sortedkv_insert_get(vec![
+        use InsertGetRemoveOp::*;
+        hash_sortedkv_insert_get_remove(vec![]);
+        hash_sortedkv_insert_get_remove(vec![
             Insert("0".to_string(), "a".to_string()),
             Insert("1".to_string(), "b".to_string()),
             Insert("2".to_string(), "c".to_string()),
@@ -722,7 +744,7 @@ mod tests {
         ]);
 
         // quickcheck found a bug in an old implementation!
-        hash_sortedkv_insert_get(vec![
+        hash_sortedkv_insert_get_remove(vec![
             Insert("80".to_string(), "".to_string()),
             Insert("9".to_string(), "".to_string()),
             Insert("9".to_string(), "".to_string()),
@@ -734,7 +756,7 @@ mod tests {
             Get("0".to_string()),
         ]);
 
-        hash_sortedkv_insert_get(vec![
+        hash_sortedkv_insert_get_remove(vec![
             Insert("".to_string(), "".to_string()),
             Insert("0".to_string(), "".to_string()),
             Insert("0".to_string(), "".to_string()),
@@ -745,18 +767,27 @@ mod tests {
     }
 
     // TODO: remove this #[ignore]
-    #[ignore]
     #[test]
     /*
      *  *******************************************
      *                  TASK 3
      *  *******************************************
+     * In a hash map, when a duplicate key is inserted previous key will be overridden
+     * but in case of sorted kv implementation it is inserted to the right of the list.
+     * while removing as well, the rightmost duplicate key will be removed. So previous key still exists.
+     * In the following test duplicate key is inserted, removed and queried for it
      */
     fn find_the_bug() {
-        todo!()
+        use InsertGetRemoveOp::*;
+        hash_sortedkv_insert_get_remove(vec![
+            Insert("0".to_string(), "a".to_string()),
+            Insert("0".to_string(), "b".to_string()),
+            Remove("0".to_string()),
+            Get("0".to_string()),
+        ]);
     }
 
-    impl Arbitrary for InsertGetOp {
+    impl Arbitrary for InsertGetRemoveOp {
         fn arbitrary(g: &mut Gen) -> Self {
             // Sometimes use u8 for keys rather than full strings to
             // exercize repeated keys more often
@@ -770,8 +801,8 @@ mod tests {
             let k = if is_big { k } else { k_small };
 
             g.choose(&[
-                InsertGetOp::Insert(k.clone(), v),
-                InsertGetOp::Get(k),
+                InsertGetRemoveOp::Insert(k.clone(), v),
+                InsertGetRemoveOp::Get(k),
             ])
             .unwrap()
             .clone()
@@ -779,22 +810,29 @@ mod tests {
 
         fn shrink(&self) -> Box<dyn Iterator<Item = Self> + 'static> {
             match self.clone() {
-                InsertGetOp::Insert(k, v) => {
+                InsertGetRemoveOp::Insert(k, v) => {
                     let inner_k = k.clone();
                     let inner_v = v.clone();
                     Box::new(
                         k.shrink()
                             .map(move |k| {
-                                InsertGetOp::Insert(k.clone(), inner_v.clone())
+                                InsertGetRemoveOp::Insert(
+                                    k.clone(),
+                                    inner_v.clone(),
+                                )
                             })
                             .chain(v.shrink().map(move |v| {
-                                InsertGetOp::Insert(inner_k.clone(), v.clone())
+                                InsertGetRemoveOp::Insert(
+                                    inner_k.clone(),
+                                    v.clone(),
+                                )
                             })),
                     )
                 }
-                InsertGetOp::Get(k) => {
-                    Box::new(k.shrink().map(|k| InsertGetOp::Get(k)))
+                InsertGetRemoveOp::Get(k) => {
+                    Box::new(k.shrink().map(|k| InsertGetRemoveOp::Get(k)))
                 }
+                _ => todo!(),
             }
         }
     }

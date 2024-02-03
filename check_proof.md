@@ -23,7 +23,7 @@ We can always generate a proof such that check proof accepts because hash functi
 
 let's say there is a leaf L and root is R1.It's difficult to find leaf L' such that merkle root is R1. It can only happen if hash function isn't collision resistant. let's say merkle proof for L is hi,hi+1...hj from top to bottom. 
 
-edge cases: If root's are ending up same even though leaves are different it means that same hash is generated for two different nodes along the path
+edge cases: If root's are ending up same even though leaves are different it means that same hash is generated for two different branching nodes or leaves along the path
 case-1:
 we got same hash when we hash leaf hash with sibling node. i.e H(H(L),hj) == H(H(L'),hj)
 case-2:
