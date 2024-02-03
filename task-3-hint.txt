@@ -1,0 +1,4 @@
+`SortedKV` is supposed to behave like `HashMap` or `BTreeMap`. Your In
+Task 2, you have tested that `insert` and `get` behave like the
+analogous operations in `HashMap`/`BTreeMap`. Try testing other
+`SortedKV` operations supported by `HashMap` and `BTreeMap`.
