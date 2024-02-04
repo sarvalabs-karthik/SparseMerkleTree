@@ -111,7 +111,7 @@ impl Node {
     // if either of left or right node doesn't exist on the path then a default node with zero digest is created
     // as they are needed to calculate merkle root.
     // Once we reach pre-leaf node, based on the direction bit
-    // We create leaf node using kv digest and default sibling node to preleaf.
+    // We create leaf node using kv digest and default sibling node to preleaf if it isn't not present.
     // While returning back to root, hash of nodes on path are re-calculated.
     fn insert_leaf(&mut self, h_k: &String, i: u32, h_kv: &Digest) {
         if i == 255 {
