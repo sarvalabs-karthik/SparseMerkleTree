@@ -679,7 +679,7 @@ pub mod tests {
         }
     }
 
-    // NOTE: This test might fail as operations include remove as well in arbitrary implemetation
+    // NOTE: This test might fail as operations include remove as well in arbitrary implemetation for InsertGetRemoveOp
     #[quickcheck]
     fn hash_sortedkv_insert_get_quickcheck(ops: Vec<InsertGetRemoveOp>) {
         hash_sortedkv_insert_get_remove(ops);
@@ -723,7 +723,6 @@ pub mod tests {
         ]);
     }
 
-    // TODO: remove this #[ignore]
     #[test]
     /*
      *  *******************************************

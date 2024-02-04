@@ -29,19 +29,14 @@ mod smt_util {
     pub fn root_from_path(path: &[Digest], k: &str, v: &str) -> Digest {
         let mut running_hash = hash_kv(k, v);
 
-        // println!("running hash {:?}", running_hash);
-
         let h_k: String =
             smt_util::hash_key(k).string().chars().rev().collect();
 
         for (i, sib) in path.iter().enumerate() {
             if h_k.chars().nth(i).unwrap() == '0' {
                 // if leaf is on left then sibling should be on the right
-                // println!("hashing {:?} {:?}",running_hash,sib);
-
                 running_hash = hash_branch(running_hash, *sib)
             } else {
-                // println!("hashing {:?} {:?}",sib,running_hash);
                 running_hash = hash_branch(*sib, running_hash)
             }
         }
@@ -86,16 +81,6 @@ impl Node {
         if self.left.is_none() && self.right.is_none() {
             return;
         }
-
-        // if i==255{
-        //     return;
-        // }
-
-        // println!("{:?} hello {:?} {:?}",i,self.left.as_ref().unwrap().hash,self.right.as_ref().unwrap().hash);
-
-        // println!("hash of left and right {:?}",hash_branch(self.right.as_ref().unwrap().hash,self.left.as_ref().unwrap().hash));
-        // println!("actualHash {:?} ",self.hash);
-        // println!("");
 
         // if the child is on left then sibling will be right one, so store right sibling's hash at ith index.
         if h_k.chars().nth((i) as usize).unwrap() == '0' {
@@ -158,7 +143,7 @@ impl Node {
 
     // remove_leaf traverses till leaf based on direction bit,
     // then leaf hash is set to zero digest.
-    // while coming back we check if left and child right child's has zero digest 
+    // while coming back we check if left and child right child's has zero digest
     // then we remove those nodes by deallocating memory.
     // we set the node's hash to zero digest after removing childs.
     // Finally we calculate the hash when on of the childs has leaf
@@ -229,12 +214,9 @@ impl AuthenticatedKV for SparseMerkleTree {
         match (res, pf) {
             (None, SparseMerkleTreeProof::NotPresent) => {}
             (Some(val), SparseMerkleTreeProof::Present { siblings }) => {
-                // println!("sibling count {:?}", siblings.len());
-
                 let merkle_root =
                     smt_util::root_from_path(siblings, &key, &val);
                 if merkle_root != *comm {
-                    // println!("hello {:?}, {:?}", merkle_root, comm);
                     return None;
                 }
             }
@@ -286,8 +268,6 @@ impl AuthenticatedKV for SparseMerkleTree {
             }
         }
 
-        // println!("insert {:?}{:?}", h_k, value);
-
         store.insert(h_k.clone(), value.clone());
         node.insert_leaf(&h_k, 0, &h_kv);
 
@@ -338,7 +318,6 @@ mod tests {
                 }
                 InsertGetRemoveOp::Get(k) => {
                     let (val, proof) = smt.get(k.clone());
-                    // println!("{:?},{:?}", val, proof);
                     SparseMerkleTree::check_proof(
                         k.clone(),
                         val.clone(),
