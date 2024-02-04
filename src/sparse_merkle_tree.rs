@@ -1,7 +1,7 @@
-use std::collections::HashMap;
+use self::smt_util::hash_branch;
 use crate::common::*;
 use crate::kv_trait::AuthenticatedKV;
-use self::smt_util::hash_branch;
+use std::collections::HashMap;
 
 /*
  *  *******************************************
@@ -24,7 +24,7 @@ mod smt_util {
     }
 
     // root_from_path takes siblings along the path from leaf to merkle root
-    // it calculates the digest of the leaf and check's the branch node is left node 
+    // it calculates the digest of the leaf and check's the branch node is left node
     // or right node based on bitstring and then hashes it appropriately untill root node is calculated.
     pub fn root_from_path(path: &[Digest], k: &str, v: &str) -> Digest {
         let mut running_hash = hash_kv(k, v);
@@ -56,13 +56,13 @@ struct Node {
     hash: Digest,
 }
 
-impl Default for  Node{
+impl Default for Node {
     fn default() -> Self {
-        return Node {
+        Node {
             left: None,
             right: None,
             hash: zero_digest(),
-        };
+        }
     }
 }
 
@@ -77,7 +77,6 @@ enum SparseMerkleTreeProof {
     NotPresent,
     Present { siblings: Vec<Digest> },
 }
-
 
 impl Node {
     // get_proof takes hashed key as string and traverses untill leaf node is reached based on the direction bit
@@ -98,7 +97,7 @@ impl Node {
         // println!("actualHash {:?} ",self.hash);
         // println!("");
 
-         // if the child is on left then sibling will be right one, so store right sibling's hash at ith index.
+        // if the child is on left then sibling will be right one, so store right sibling's hash at ith index.
         if h_k.chars().nth((i) as usize).unwrap() == '0' {
             self.left.as_ref().unwrap().get_proof(h_k, i + 1, siblings);
             siblings.push(self.right.as_ref().unwrap().hash);
@@ -106,10 +105,9 @@ impl Node {
             self.right.as_ref().unwrap().get_proof(h_k, i + 1, siblings);
             siblings.push(self.left.as_ref().unwrap().hash);
         }
-        
     }
 
-    // insert_leaf traverses till leaf based on direction bit, 
+    // insert_leaf traverses till leaf based on direction bit,
     // if either of left or right node doesn't exist on the path then a default node with zero digest is created
     // as they are needed to calculate merkle root
     // once we reach pre-leaf node, based on the direction bit
@@ -124,7 +122,7 @@ impl Node {
                     hash: *h_kv,
                 }));
 
-                self.right = Some(Box::new(Node::default()));
+                self.right = Some(Box::default());
             } else {
                 self.right = Some(Box::new(Node {
                     left: None,
@@ -132,7 +130,7 @@ impl Node {
                     hash: *h_kv,
                 }));
 
-                self.left = Some(Box::new(Node::default()));
+                self.left = Some(Box::default());
             }
 
             self.hash = hash_branch(
@@ -143,14 +141,47 @@ impl Node {
             return;
         }
 
-        self.left.get_or_insert_with(|| Box::new(Node::default()));
-        self.right.get_or_insert_with(|| Box::new(Node::default()));
-    
+        self.left.get_or_insert_with(Box::default);
+        self.right.get_or_insert_with(Box::default);
 
         if h_k.chars().nth((i) as usize).unwrap() == '0' {
             self.left.as_mut().unwrap().insert_leaf(h_k, i + 1, h_kv);
         } else {
             self.right.as_mut().unwrap().insert_leaf(h_k, i + 1, h_kv);
+        }
+
+        self.hash = smt_util::hash_branch(
+            self.left.as_ref().unwrap().hash,
+            self.right.as_ref().unwrap().hash,
+        )
+    }
+
+    // remove_leaf traverses till leaf based on direction bit,
+    // then leaf hash is set to zero digest
+    // while coming back we check if left and child right child's has zero digest then we remove those nodes by deallocating memory
+    // we set the node's hash to zero digest after removing childs
+    // finally we calculate the hash when on of the childs has leaf
+    fn remove_leaf(&mut self, h_k: &String, i: u32) {
+        if self.left.is_none() && self.right.is_none() {
+            self.hash = zero_digest();
+
+            return;
+        }
+
+        if h_k.chars().nth((i) as usize).unwrap() == '0' {
+            self.left.as_mut().unwrap().remove_leaf(h_k, i + 1);
+        } else {
+            self.right.as_mut().unwrap().remove_leaf(h_k, i + 1);
+        }
+
+        if self.left.as_ref().unwrap().hash == zero_digest()
+            && self.right.as_ref().unwrap().hash == zero_digest()
+        {
+            self.left.take();
+            self.right.take();
+            self.hash = zero_digest();
+
+            return;
         }
 
         self.hash = smt_util::hash_branch(
@@ -235,7 +266,7 @@ impl AuthenticatedKV for SparseMerkleTree {
      *  *******************************************
      *                  TASK 6
      *  *******************************************
-     * 
+     *
      * insert doesn't insert if both key and value are already present in store
      * if only key exists but value is different then the value is replaced and merkle root is calculated
      * if key doesn't exist the kv pair is inserted in store and merkle root is calculated
@@ -266,9 +297,24 @@ impl AuthenticatedKV for SparseMerkleTree {
      *  *******************************************
      *                  TASK 6
      *  *******************************************
+     * remove checks if key present in store then it will be removed and merkle root is updated
+     * otherwise we don't get into merkle tree
+     *
      */
-    fn remove(self, _key: Self::K) -> Self {
-        todo!()
+    fn remove(self, key: Self::K) -> Self {
+        let mut node = self.root;
+        let mut store = self.store;
+
+        let h_k = smt_util::hash_key(&key).string();
+
+        // if key not found in store as we don't need to update merkle root
+        if store.remove(&h_k.clone()).is_none() {
+            return SparseMerkleTree { root: node, store };
+        }
+
+        node.remove_leaf(&h_k, 0);
+
+        SparseMerkleTree { root: node, store }
     }
 }
 
@@ -321,23 +367,21 @@ mod tests {
         let test_cases = [
             (
                 "query non existing key on empty tree",
-                vec![
-                    Get("22".to_string()),
-                ]
+                vec![Get("22".to_string())],
             ),
             (
                 "query non existing key on non-empty tree",
                 vec![
                     Insert("22".to_string(), "".to_string()),
                     Get("23".to_string()),
-                ]
+                ],
             ),
             (
                 "query existing key",
                 vec![
                     Insert("22".to_string(), "".to_string()),
                     Get("22".to_string()),
-                ]
+                ],
             ),
             (
                 "insert duplicate key with same value",
@@ -345,7 +389,7 @@ mod tests {
                     Insert("22".to_string(), "".to_string()),
                     Insert("22".to_string(), "".to_string()),
                     Get("22".to_string()),
-                ]
+                ],
             ),
             (
                 "insert duplicate key with different value",
@@ -353,7 +397,7 @@ mod tests {
                     Insert("0".to_string(), "".to_string()),
                     Insert("0".to_string(), "\0".to_string()),
                     Get("0".to_string()),
-                ]
+                ],
             ),
             (
                 "insert multiple keys and values",
@@ -367,7 +411,23 @@ mod tests {
                     Get("80".to_string()),
                     Get("9".to_string()),
                     Get("0".to_string()),
-                ]
+                ],
+            ),
+            ("remove non existing key", vec![Remove("22".to_string())]),
+            (
+                "remove existing key",
+                vec![
+                    Insert("80".to_string(), "".to_string()),
+                    Insert("92".to_string(), "".to_string()),
+                    Insert("94".to_string(), "".to_string()),
+                    Insert("5".to_string(), "".to_string()),
+                    Insert("6".to_string(), "\u{0}".to_string()),
+                    Remove("92".to_string()),
+                    Get("92".to_string()),
+                    Get("94".to_string()),
+                    Remove("5".to_string()),
+                    Get("6".to_string()),
+                ],
             ),
         ];
 

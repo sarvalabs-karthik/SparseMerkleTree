@@ -679,14 +679,11 @@ pub mod tests {
         }
     }
 
-    // TODO: remove this #[ignore]
-
+    // NOTE: This test might fail as operations include remove as well in arbitrary implemetation
     #[quickcheck]
     fn hash_sortedkv_insert_get_quickcheck(ops: Vec<InsertGetRemoveOp>) {
         hash_sortedkv_insert_get_remove(ops);
     }
-
-    // TODO: remove this #[ignore]
 
     #[test]
     fn hash_sortedkv_insert_get_test_cases() {
@@ -764,7 +761,8 @@ pub mod tests {
 
             g.choose(&[
                 InsertGetRemoveOp::Insert(k.clone(), v),
-                InsertGetRemoveOp::Get(k),
+                InsertGetRemoveOp::Get(k.clone()),
+                InsertGetRemoveOp::Remove(k),
             ])
             .unwrap()
             .clone()
