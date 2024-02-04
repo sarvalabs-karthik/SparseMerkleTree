@@ -317,11 +317,62 @@ mod tests {
     #[test]
     fn hash_smt_insert_get_test_cases() {
         use InsertGetRemoveOp::*;
-        hash_smt_insert_get_remove(vec![]);
-        hash_smt_insert_get_remove(vec![
-            Insert("0".to_string(), "".to_string()),
-            Insert("0".to_string(), "\0".to_string()),
-            Get("0".to_string()),
-        ]);
+
+        let test_cases = [
+            (
+                "query non existing key on empty tree",
+                vec![
+                    Get("22".to_string()),
+                ]
+            ),
+            (
+                "query non existing key on non-empty tree",
+                vec![
+                    Insert("22".to_string(), "".to_string()),
+                    Get("23".to_string()),
+                ]
+            ),
+            (
+                "query existing key",
+                vec![
+                    Insert("22".to_string(), "".to_string()),
+                    Get("22".to_string()),
+                ]
+            ),
+            (
+                "insert duplicate key with same value",
+                vec![
+                    Insert("22".to_string(), "".to_string()),
+                    Insert("22".to_string(), "".to_string()),
+                    Get("22".to_string()),
+                ]
+            ),
+            (
+                "insert duplicate key with different value",
+                vec![
+                    Insert("0".to_string(), "".to_string()),
+                    Insert("0".to_string(), "\0".to_string()),
+                    Get("0".to_string()),
+                ]
+            ),
+            (
+                "insert multiple keys and values",
+                vec![
+                    Insert("80".to_string(), "".to_string()),
+                    Insert("9".to_string(), "".to_string()),
+                    Insert("9".to_string(), "".to_string()),
+                    Insert("9".to_string(), "".to_string()),
+                    Insert("80".to_string(), "\u{0}".to_string()),
+                    Insert("0".to_string(), "".to_string()),
+                    Get("80".to_string()),
+                    Get("9".to_string()),
+                    Get("0".to_string()),
+                ]
+            ),
+        ];
+
+        for (_, ops) in test_cases {
+            hash_smt_insert_get_remove(ops)
+        }
     }
 }
