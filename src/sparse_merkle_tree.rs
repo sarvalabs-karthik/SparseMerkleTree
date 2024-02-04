@@ -109,10 +109,10 @@ impl Node {
 
     // insert_leaf traverses till leaf based on direction bit,
     // if either of left or right node doesn't exist on the path then a default node with zero digest is created
-    // as they are needed to calculate merkle root
-    // once we reach pre-leaf node, based on the direction bit
-    // we create leaf node using kv digest and default sibling node to it
-    // while returning back to root, hash of nodes on path are re-calculated.
+    // as they are needed to calculate merkle root.
+    // Once we reach pre-leaf node, based on the direction bit
+    // We create leaf node using kv digest and default sibling node to preleaf.
+    // While returning back to root, hash of nodes on path are re-calculated.
     fn insert_leaf(&mut self, h_k: &String, i: u32, h_kv: &Digest) {
         if i == 255 {
             if h_k.chars().nth((i) as usize).unwrap() == '0' {
@@ -122,7 +122,7 @@ impl Node {
                     hash: *h_kv,
                 }));
 
-                self.right = Some(Box::default());
+                self.right.get_or_insert_with(Box::default);
             } else {
                 self.right = Some(Box::new(Node {
                     left: None,
@@ -130,7 +130,7 @@ impl Node {
                     hash: *h_kv,
                 }));
 
-                self.left = Some(Box::default());
+                self.left.get_or_insert_with(Box::default);
             }
 
             self.hash = hash_branch(
@@ -157,10 +157,11 @@ impl Node {
     }
 
     // remove_leaf traverses till leaf based on direction bit,
-    // then leaf hash is set to zero digest
-    // while coming back we check if left and child right child's has zero digest then we remove those nodes by deallocating memory
-    // we set the node's hash to zero digest after removing childs
-    // finally we calculate the hash when on of the childs has leaf
+    // then leaf hash is set to zero digest.
+    // while coming back we check if left and child right child's has zero digest 
+    // then we remove those nodes by deallocating memory.
+    // we set the node's hash to zero digest after removing childs.
+    // Finally we calculate the hash when on of the childs has leaf
     fn remove_leaf(&mut self, h_k: &String, i: u32) {
         if self.left.is_none() && self.right.is_none() {
             self.hash = zero_digest();
