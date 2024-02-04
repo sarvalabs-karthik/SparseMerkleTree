@@ -1,6 +1,6 @@
 In a merkle tree, we calculates hash of leaves and Hashes of branches in a binary tree fashion to obtain root.
 let's consider n as number of leaves
-In case of sorted KV store, it takes O(2^(n))time to calculate merkle root every time.
+In case of sorted KV store, it takes O(n)time to calculate merkle root every time.
 Incase of insert, it takes O(n) time for shifting elements to right in array and merkle root needs to be calculated again which is inefficient.
 Incase of remove, it takes O(n) time to shift elements to right and merkle root needs to be calculated again which is inefficient.
 Inorder to generate merkle proof, we need to recompute hashes. it takes O(log n) time.

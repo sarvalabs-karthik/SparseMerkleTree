@@ -18,6 +18,16 @@ impl core::fmt::Debug for Digest {
     }
 }
 
+impl Digest {
+    pub fn string(self) -> String {
+        self.as_ref()
+            .iter()
+            .map(|&byte| format!("{:08b}", byte))
+            .collect::<Vec<_>>()
+            .join("")
+    }
+}
+
 pub fn zero_digest() -> Digest {
     Digest(*digest::Output::<sha2::Sha256>::from_slice(
         &vec![0u8; sha2::Sha256::output_size()],

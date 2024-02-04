@@ -109,7 +109,6 @@ impl AuthenticatedKV for SortedKV {
         self.commitment
     }
 
-
     fn check_proof(
         key: Self::K,
         res: Option<Self::V>,
@@ -466,8 +465,6 @@ mod sortedkv_util {
             peaks[i] = Some(running_hash);
         }
 
-        println!("{:?}",peaks);
-
         if peaks.len() > 1 && peaks.last() == Some(&None) {
             peaks.pop();
         }
@@ -587,13 +584,13 @@ mod sortedkv_util {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use quickcheck::{quickcheck, Arbitrary, Gen};
     use std::collections::{BTreeMap, HashMap};
 
     #[derive(Debug, Clone)]
-    enum InsertGetRemoveOp {
+    pub enum InsertGetRemoveOp {
         Insert(String, String),
         Get(String),
         Remove(String),
@@ -739,7 +736,7 @@ mod tests {
      * but in case of sorted kv implementation it is inserted to the right of the list.
      * while removing as well, the rightmost duplicate key will be removed. So previous key still exists.
      * In the following test duplicate key is inserted, removed and queried for it.
-     * 
+     *
      * To overcome this, we can replace the key if it exists already.
      */
     fn find_the_bug() {
