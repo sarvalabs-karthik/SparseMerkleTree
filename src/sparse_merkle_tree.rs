@@ -92,7 +92,7 @@ impl Node {
         }
     }
 
-    // insert_leaf traverses till leaf based on direction bit,
+    // insert_leaf traverses till pre-leaf based on direction bit,
     // if either of left or right node doesn't exist on the path then a default node with zero digest is created
     // as they are needed to calculate merkle root.
     // Once we reach pre-leaf node, based on the direction bit
